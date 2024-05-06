@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const statusCodes = require("../constants/statusCodes");
 const bcrypt = require('bcrypt');
+const sql = require("mssql");
 
 const router = express.Router();
 router.use(bodyParser.json());
@@ -24,6 +25,19 @@ router.post('/register', async (req, res) => {
   }catch{
     res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
   }
+});
+
+// Define route for fetching data from SQL Server
+router.get("/user", (req, res) => {
+  // Execute a SELECT query
+  new sql.Request().query("SELECT * FROM UserData", (err, result) => {
+      if (err) {
+          console.error("Error executing query:", err);
+      } else {
+        res.status(statusCodes.OK).json(result.recordset); // Send query result as response
+          console.dir(result.recordset);
+      }
+  });
 });
 
 // Authenticate user
