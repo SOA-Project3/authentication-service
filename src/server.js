@@ -34,7 +34,7 @@ router.post('/login', authController.loginFunction);
 
 app.use(router); 
 app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+  console.log(`Server is running at ${port}`);
 });
 
 module.exports = {

@@ -18,10 +18,8 @@ var config = {
 // Register a new user
 
 const registerFunction = async (req, res) => {
-  console.log("Body "+req.body)
   const { Id, Fullname, Rol, Password } = req.body;
 
-  console.log(Password)
 
   try {
     // Connect to the database
@@ -29,15 +27,13 @@ const registerFunction = async (req, res) => {
 
     // Check if the username is already taken
     const result = await sql.query`SELECT * FROM UserData WHERE Id = ${Id}`;
-    console.log("Result: " + result.recordset.length)
     if (result.recordset.length > 0) {
-      return res.status(statusCodes.FORBIDDEN).json({ message: 'Id already exists' });
+      return res.status(statusCodes.FORBIDDEN).json('Id already exists');
     }
 
     // Hash the Password
     const hashedPassword = await bcrypt.hash(Password, 10);
 
-    console.log("Password: "+hashedPassword)
 
     // Insert the new user into the database
     await sql.query`INSERT INTO UserData (Id, Fullname, Rol, Password) VALUES (${Id}, ${Fullname}, ${Rol}, ${hashedPassword})`;
@@ -73,8 +69,6 @@ const loginFunction = async (req, res) => {
     if (!passwordMatch) {
       return res.status(statusCodes.FORBIDDEN).json({ message: 'Invalid username or Password' });
     }
-    console.log("UserId: "+user.Id);
-    console.log("UserName: "+user.Fullname);
     res.status(statusCodes.OK).json(user);
   } catch (error) {
     console.error('Error authenticating user:', error);
