@@ -1,11 +1,8 @@
-const express = require('express');
-const bodyParser = require('body-parser');
 const statusCodes = require("../constants/statusCodes");
 const bcrypt = require('bcrypt');
 const sql = require("mssql");
 
-const router = express.Router();
-router.use(bodyParser.json());
+
 
 // SQL Server configuration
 var config = {
@@ -19,7 +16,9 @@ var config = {
 }
 
 // Register a new user
-router.post('/register', async (req, res) => {
+
+const registerFunction = async (req, res) => {
+  console.log("Body "+req.body)
   const { Id, Fullname, Rol, Password } = req.body;
 
   console.log(Password)
@@ -51,10 +50,10 @@ router.post('/register', async (req, res) => {
     // Close the connection
     await sql.close();
   }
-});
+};
 
 // Authenticate user
-router.post('/login', async (req, res) => {
+const loginFunction = async (req, res) => {
   const { Id, Password } = req.body;
 
   try {
@@ -84,21 +83,10 @@ router.post('/login', async (req, res) => {
     // Close the connection
     await sql.close();
   }
-});
-
-// Define route for fetching data from SQL Server
-router.get("/user", (req, res) => {
-  // Execute a SELECT query
-  new sql.Request().query("SELECT * FROM UserData", (err, result) => {
-      if (err) {
-          console.error("Error executing query:", err);
-      } else {
-        res.status(statusCodes.OK).json(result.recordset); // Send query result as response
-          console.dir(result.recordset);
-      }
-  });
-});
+};
 
 
-
-module.exports = router;
+module.exports = {
+  registerFunction,
+  loginFunction
+};
