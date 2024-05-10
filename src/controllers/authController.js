@@ -8,7 +8,7 @@ const registerFunction = (req, res) => {
   const { Id, Fullname, Rol, Password } = req.body;
 
   // Check if the username is already taken
-  new sql.Request().query(`SELECT * FROM UserData WHERE Id = ${Id}`, async (err, result) => {
+  new sql.Request().query(`SELECT * FROM UserData WHERE Id = '${Id}'`, async (err, result) => {
     if (err) {
       console.error("Error executing query:", err);
       return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
@@ -23,7 +23,7 @@ const registerFunction = (req, res) => {
       const hashedPassword = await bcrypt.hash(Password, 10);
 
       new sql.Request()
-      .input('Id', sql.Int, Id)
+      .input('Id', sql.NVarChar, Id)
       .input('Fullname', sql.NVarChar, Fullname)
       .input('Rol', sql.NVarChar, Rol)
       .input('Password', sql.NVarChar, hashedPassword)
@@ -45,9 +45,9 @@ const registerFunction = (req, res) => {
 
 const loginFunction = (req, res) => {
   const { Id, Password } = req.body;
-
+  console.log(`SELECT * FROM UserData WHERE Id = '${Id}'`)
   // Execute the SQL query to retrieve user data
-  new sql.Request().query(`SELECT * FROM UserData WHERE Id = ${Id}`, (err, result) => {
+  new sql.Request().query(`SELECT * FROM UserData WHERE Id = '${Id}'`, (err, result) => {
     if (err) {
       console.error("Error executing query:", err);
       return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
