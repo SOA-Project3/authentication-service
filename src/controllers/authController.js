@@ -19,14 +19,11 @@ const registerFunction = (req, res) => {
     }
 
     try {
-      // Hash the Password
-      const hashedPassword = await bcrypt.hash(Password, 10);
-
       new sql.Request()
       .input('Id', sql.NVarChar, Id)
       .input('Fullname', sql.NVarChar, Fullname)
       .input('Rol', sql.NVarChar, Rol)
-      .input('Password', sql.NVarChar, hashedPassword)
+      .input('Password', sql.NVarChar, Password)
       .query('INSERT INTO UserData (Id, Fullname, Rol, Password) VALUES (@Id, @Fullname, @Rol, @Password)', (insertErr, insertResult) => {
         if (insertErr) {
           console.error("Error inserting user into database:", insertErr);
@@ -45,7 +42,6 @@ const registerFunction = (req, res) => {
 
 const loginFunction = (req, res) => {
   const { Id, Password } = req.body;
-  console.log(`SELECT * FROM UserData WHERE Id = '${Id}'`)
   // Execute the SQL query to retrieve user data
   new sql.Request().query(`SELECT * FROM UserData WHERE Id = '${Id}'`, (err, result) => {
     if (err) {
@@ -76,8 +72,27 @@ const loginFunction = (req, res) => {
   });
 };
 
+const getUserById = (req, res) => {
+  const { Id } = req.query;
+  console.log(`SELECT * FROM UserData WHERE Id = '${Id}'`);
+  // Execute the SQL query to retrieve user data
+  new sql.Request().query(`SELECT * FROM UserData WHERE Id = '${Id}'`, (err, result) => {
+    if (err) {
+      console.error("Error executing query:", err);
+      return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
+    }
+
+    // Check if user exists
+    const user = result.recordset[0];
+    if (!user) {
+      return res.status(statusCodes.FORBIDDEN).json({ message: 'Invalid username or password' });
+    }
+    res.status(statusCodes.OK).json(user);
+  });
+};
 
 module.exports = {
   registerFunction,
-  loginFunction
+  loginFunction,
+  getUserById
 };

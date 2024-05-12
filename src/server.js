@@ -31,6 +31,7 @@ sql.connect(config, err => {
 
 router.post('/register', authController.registerFunction);
 router.post('/login', authController.loginFunction);
+router.get('/getUserbyId', authController.getUserById);
 
 app.use(router); 
 app.listen(port, () => {
