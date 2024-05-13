@@ -47,6 +47,11 @@ const password_sub_name = 'auth-backend-password-sub';
 const password_sub = pubsub.subscription(password_sub_name);
 password_sub.on('message', authController.resetPassword);
 
+const update_password_sub_name = 'auth-backend-update-password-sub';
+const update_password_sub = pubsub.subscription(update_password_sub_name);
+update_password_sub.on('message', authController.updatePassword);
+
+
 app.use(router); 
 app.listen(port, () => {
   console.log(`Server is running at ${port}`);

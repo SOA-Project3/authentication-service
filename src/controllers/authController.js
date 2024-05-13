@@ -171,11 +171,53 @@ const resetPassword = (message) => {
   });
 };
 
+const updatePassword = (message) => {
+  const data = message.data.toString();
+  console.log('Received message:', data);
+  const { Id, Password } = JSON.parse(data);
+
+  // Check if user exists
+  const userQuery = `SELECT * FROM UserData WHERE Id = '${Id}'`;
+  new sql.Request().query(userQuery, (err, result) => {
+    if (err) {
+      console.error("Error checking user existence:", err);
+      // Handle error, maybe return an error response
+    } else {
+      // If no rows are returned, the user does not exist
+      if (result.recordset.length === 0) {
+        console.log("User does not exist.");
+        // Handle the case where the user does not exist, maybe return an error response
+      } else {
+        console.log("User exists.");
+        // Generate a random temporary password
+        const tempPassword = Math.random().toString(36).slice(-8);
+
+        // Update the user's password in the database with the temporary password
+        const updateQuery = `UPDATE UserData SET Password = '${Password}' WHERE Id = '${Id}'`;
+
+        // Execute the update query
+        new sql.Request().query(updateQuery, (err, result) => {
+          if (err) {
+            console.error("Error updating password:", err);
+            // Handle error, maybe return an error response
+          } else {
+            console.log("Password Update Succesfully.");
+            message.ack();
+            emailer.sendPasswordConfirmation(Id);
+          }
+        });
+      }
+    }
+  });
+};
+
+
 
 module.exports = {
   registerFunction,
   loginFunction,
   getUserById,
   deleteUser,
-  resetPassword
+  resetPassword,
+  updatePassword
 };
