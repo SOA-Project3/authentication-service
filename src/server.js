@@ -43,6 +43,10 @@ const deleteUser_sub_name = 'auth-backend-delete-user-sub';
 const deleteUser_sub = pubsub.subscription(deleteUser_sub_name);
 deleteUser_sub.on('message', authController.deleteUser);
 
+const password_sub_name = 'auth-backend-password-sub';
+const password_sub = pubsub.subscription(password_sub_name);
+password_sub.on('message', authController.resetPassword);
+
 app.use(router); 
 app.listen(port, () => {
   console.log(`Server is running at ${port}`);
