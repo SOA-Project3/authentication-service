@@ -91,8 +91,51 @@ const getUserById = (req, res) => {
   });
 };
 
+
+const deleteUser = (message) => {
+
+  const data = message.data.toString();
+  console.log('Received message:', data);
+  const { Id } = JSON.parse(data);
+  
+  const deleteUserQuery = `DELETE FROM UserData WHERE Id = '${Id}'`;
+  console.log(deleteUserQuery);
+  
+  const deleteReservationsQuery = `DELETE FROM ScheduleSlots WHERE UserId = '${Id}'`;
+
+  // Execute the delete queries
+  new sql.Request().query(deleteUserQuery, (err, result) => {
+    if (err) {
+      console.error("Error deleting user:", err);
+    }
+
+    // Check if any rows were affected by the delete query
+    if (result.rowsAffected[0] === 0) {
+      console.log('User not found');
+    }
+
+    new sql.Request().query(deleteReservationsQuery, (err, result) => {
+      if (err) {
+        console.error("Error deleting reservations:", err);
+      }
+
+      // Check if any rows were affected by the delete query
+      if (result.rowsAffected[0] === 0) {
+        console.log("User deleted but no associated reservations found.");
+      }
+
+      // Acknowledge the message to remove it from the subscription
+      message.ack();
+      // SEND EMAIL    
+      console.log("Send Email")
+    });
+  });
+};
+
+
 module.exports = {
   registerFunction,
   loginFunction,
-  getUserById
+  getUserById,
+  deleteUser
 };
