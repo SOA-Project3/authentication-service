@@ -152,18 +152,26 @@ const resetPassword = (message) => {
         // Generate a random temporary password
         const tempPassword = Math.random().toString(36).slice(-8);
 
-        // Update the user's password in the database with the temporary password
-        const updateQuery = `UPDATE UserData SET Password = '${tempPassword}' WHERE Id = '${Id}'`;
-
-        // Execute the update query
-        new sql.Request().query(updateQuery, (err, result) => {
+        // Hash the temporary password
+        bcrypt.hash(tempPassword, 10, (err, hashPassword) => {
           if (err) {
-            console.error("Error updating password:", err);
+            console.error("Error hashing password:", err);
             // Handle error, maybe return an error response
           } else {
-            console.log("Password reset successfully.");
-            message.ack();
-            emailer.sendTempPasswordEmail(Id, tempPassword);
+            // Update the user's password in the database with the hashed temporary password
+            const updateQuery = `UPDATE UserData SET Password = '${hashPassword}' WHERE Id = '${Id}'`;
+
+            // Execute the update query
+            new sql.Request().query(updateQuery, (err, result) => {
+              if (err) {
+                console.error("Error updating password:", err);
+                // Handle error, maybe return an error response
+              } else {
+                console.log("Password reset successfully.");
+                message.ack();
+                emailer.sendTempPasswordEmail(Id, tempPassword);
+              }
+            });
           }
         });
       }
