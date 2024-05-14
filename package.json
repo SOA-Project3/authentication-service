@@ -5,8 +5,14 @@
   "main": "src/server.js",
   "scripts": {
     "test": "jest",
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "coverage": "jest --coverage",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["lcov", "text", "html"]
   },
   "keywords": [],
   "author": "",
@@ -15,10 +21,14 @@
     "@google-cloud/pubsub": "^4.4.0",
     "bcrypt": "^5.1.1",
     "express": "^4.19.2",
+    "jest-mock-req-res": "^1.0.2",
     "mssql": "^10.0.2",
     "nodemailer": "^6.9.13",
     "qrcode": "^1.5.3",
     "speakeasy": "^2.0.0",
     "tedious": "^18.2.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }

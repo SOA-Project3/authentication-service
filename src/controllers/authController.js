@@ -19,7 +19,6 @@ const registerFunction = (req, res) => {
       return res.status(statusCodes.FORBIDDEN).json('Id already exists');
     }
 
-    try {
       new sql.Request()
       .input('Id', sql.NVarChar, Id)
       .input('Fullname', sql.NVarChar, Fullname)
@@ -33,11 +32,7 @@ const registerFunction = (req, res) => {
 
         console.log('User registered successfully');
         res.status(statusCodes.CREATED).json({ message: 'User registered successfully' });
-      });
-    } catch (hashingError) {
-      console.error('Error hashing password:', hashingError);
-      return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
-    }
+      }); 
   });
 };
 
@@ -197,8 +192,6 @@ const updatePassword = (message) => {
         // Handle the case where the user does not exist, maybe return an error response
       } else {
         console.log("User exists.");
-        // Generate a random temporary password
-        const tempPassword = Math.random().toString(36).slice(-8);
 
         // Update the user's password in the database with the temporary password
         const updateQuery = `UPDATE UserData SET Password = '${Password}' WHERE Id = '${Id}'`;
