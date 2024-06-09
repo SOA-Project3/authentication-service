@@ -5,7 +5,7 @@ const { PubSub } = require('@google-cloud/pubsub');
 const sql = require("mssql");
 const app = express();
 const router = express.Router(); 
-const port = 3000;
+const port = 3001;
 
 const keyFilename = process.env.keyfile;
 const pubsub = new PubSub({
@@ -39,6 +39,7 @@ router.post('/register', authController.registerFunction);
 router.post('/login', authController.loginFunction);
 router.get('/getUserbyId', authController.getUserById);
 
+/*
 const deleteUser_sub_name = 'auth-backend-delete-user-sub';
 const deleteUser_sub = pubsub.subscription(deleteUser_sub_name);
 deleteUser_sub.on('message', authController.deleteUser);
@@ -50,7 +51,7 @@ password_sub.on('message', authController.resetPassword);
 const update_password_sub_name = 'auth-backend-update-password-sub';
 const update_password_sub = pubsub.subscription(update_password_sub_name);
 update_password_sub.on('message', authController.updatePassword);
-
+*/
 
 app.use(router); 
 app.listen(port, () => {
