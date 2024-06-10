@@ -16,7 +16,7 @@ const registerFunction = (req, res) => {
     }
 
     if (result.recordset.length > 0) {
-      return res.status(statusCodes.FORBIDDEN).json('Id already exists');
+      return res.status(statusCodes.OK).json('Id already exists');
     }
 
       new sql.Request()
@@ -31,7 +31,7 @@ const registerFunction = (req, res) => {
         }
 
         console.log('User registered successfully');
-        res.status(statusCodes.CREATED).json({ message: 'User registered successfully' });
+        res.status(statusCodes.OK).json({ message: 'User registered successfully' });
       }); 
   });
 };
@@ -48,7 +48,7 @@ const loginFunction = (req, res) => {
     // Check if user exists
     const user = result.recordset[0];
     if (!user) {
-      return res.status(statusCodes.FORBIDDEN).json({ message: 'Invalid username or password' });
+      return res.status(statusCodes.OK).json({ message: 'Invalid username or password' });
     }
 
     // Compare passwords
@@ -59,7 +59,7 @@ const loginFunction = (req, res) => {
       }
 
       if (!passwordMatch) {
-        return res.status(statusCodes.FORBIDDEN).json({ message: 'Invalid username or password' });
+        return res.status(statusCodes.OK).json({ message: 'Invalid username or password' });
       }
 
       // Passwords match, return user data
@@ -80,137 +80,138 @@ const getUserById = (req, res) => {
     // Check if user exists
     const user = result.recordset[0];
     if (!user) {
-      return res.status(statusCodes.FORBIDDEN).json({ message: 'Invalid username or password' });
+      return res.status(statusCodes.OK).json({ message: 'Invalid username or password' });
     }
     res.status(statusCodes.OK).json(user);
   });
 };
 
 
-const deleteUser = (message) => {
+async function deleteUser(req, res) {
+  const { Id } = req.query;
 
-  const data = message.data.toString();
-  console.log('Received message:', data);
-  const { Id } = JSON.parse(data);
-  
-  const deleteUserQuery = `DELETE FROM UserData WHERE Id = '${Id}'`;
-  console.log(deleteUserQuery);
-  
-  const deleteReservationsQuery = `DELETE FROM ScheduleSlots WHERE UserId = '${Id}'`;
+  try {
+    // Verificar si el usuario existe antes de intentar eliminarlo
+    const checkUserRequest = new sql.Request();
+    checkUserRequest.input('Id', sql.VarChar, Id);
+    const checkUserResult = await checkUserRequest.query('SELECT * FROM UserData WHERE Id = @Id');
 
-  new sql.Request().query(deleteUserQuery, (err, result) => {
-    if (err) {
-      console.error("Error deleting user:", err);
+    if (checkUserResult.recordset.length === 0) {
+      const message = 'User not found';
+      console.log(message);
+      return res.status(statusCodes.OK).json({ error: message });
     }
 
-    if (result.rowsAffected[0] === 0) {
-      console.log('User not found');
+    // Eliminar el usuario
+    const deleteUserRequest = new sql.Request();
+    deleteUserRequest.input('Id', sql.VarChar, Id);
+    await deleteUserRequest.query('DELETE FROM UserData WHERE Id = @Id');
+
+    // Eliminar las reservas asociadas
+    const deleteReservationsRequest = new sql.Request();
+    deleteReservationsRequest.input('Id', sql.VarChar, Id);
+    const deleteReservationsResult = await deleteReservationsRequest.query('DELETE FROM ScheduleSlots WHERE UserId = @Id');
+
+    let emailMessage = 'Your user name has been deleted';
+    if (deleteReservationsResult.rowsAffected[0] === 0) {
+      emailMessage += " but no associated reservations found to be deleted";
     }
+    console.log(emailMessage);
 
-    new sql.Request().query(deleteReservationsQuery, (err, result) => {
-      if (err) {
-        console.error("Error deleting reservations:", err);
-      }else{
-        let emailMessage = 'Your user name has been deleted';
-        if (result.rowsAffected[0] === 0) {
-          emailMessage += " but no associated reservations found to be deleted"
-          console.log(emailMessage);
-        }
-        
-        message.ack();
-        emailer.sendDeleteUserEmail(Id, emailMessage);
-      }
+    // Enviar notificación por correo electrónico
+    emailer.sendDeleteUserEmail(Id, emailMessage);
 
-    });
-  });
+    return res.status(statusCodes.OK).json({ message: emailMessage });
+
+  } catch (err) {
+    console.error("Error executing query:", err);
+    const message = 'Error occurred while deleting user or reservations';
+    await emailer.sendDeleteUserEmail(Id, message);
+    return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ error: message });
+  } 
 };
 
+async function resetPassword(req, res) {
+  const { Id } = req.query;
 
-const resetPassword = (message) => {
-  const data = message.data.toString();
-  console.log('Received message:', data);
-  const { Id } = JSON.parse(data);
+  try {
+    // Verificar si el usuario existe
+    const userRequest = new sql.Request();
+    userRequest.input('Id', sql.VarChar, Id);
+    const userResult = await userRequest.query('SELECT * FROM UserData WHERE Id = @Id');
 
-  // Check if user exists
-  const userQuery = `SELECT * FROM UserData WHERE Id = '${Id}'`;
-  new sql.Request().query(userQuery, (err, result) => {
-    if (err) {
-      console.error("Error checking user existence:", err);
-      // Handle error, maybe return an error response
-    } else {
-      // If no rows are returned, the user does not exist
-      if (result.recordset.length === 0) {
-        console.log("User does not exist.");
-        // Handle the case where the user does not exist, maybe return an error response
-      } else {
-        console.log("User exists.");
-        // Generate a random temporary password
-        const tempPassword = Math.random().toString(36).slice(-8);
-
-        // Hash the temporary password
-        bcrypt.hash(tempPassword, 10, (err, hashPassword) => {
-          if (err) {
-            console.error("Error hashing password:", err);
-            // Handle error, maybe return an error response
-          } else {
-            // Update the user's password in the database with the hashed temporary password
-            const updateQuery = `UPDATE UserData SET Password = '${hashPassword}' WHERE Id = '${Id}'`;
-
-            // Execute the update query
-            new sql.Request().query(updateQuery, (err, result) => {
-              if (err) {
-                console.error("Error updating password:", err);
-                // Handle error, maybe return an error response
-              } else {
-                console.log("Password reset successfully.");
-                message.ack();
-                emailer.sendTempPasswordEmail(Id, tempPassword);
-              }
-            });
-          }
-        });
-      }
+    if (userResult.recordset.length === 0) {
+      const message = "User does not exist.";
+      console.log(message);
+      return res.status(statusCodes.OK).json({ error: message });
     }
-  });
+
+    console.log("User exists.");
+
+    // Generar una contraseña temporal aleatoria
+    const tempPassword = Math.random().toString(36).slice(-8);
+
+    // Hash de la contraseña temporal
+    const hashPassword = await bcrypt.hash(tempPassword, 10);
+
+    // Actualizar la contraseña del usuario en la base de datos con la contraseña temporal hash
+    const updateRequest = new sql.Request();
+    updateRequest.input('Password', sql.VarChar, hashPassword);
+    updateRequest.input('Id', sql.VarChar, Id);
+    await updateRequest.query('UPDATE UserData SET Password = @Password WHERE Id = @Id');
+
+    console.log("Password reset successfully.");
+
+    // Enviar la contraseña temporal al correo electrónico del usuario
+    await emailer.sendTempPasswordEmail(Id, tempPassword);
+
+    return res.status(statusCodes.OK).json({ message: "Password reset successfully" });
+
+  } catch (err) {
+    console.error("Error executing query:", err);
+    return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ error: "An error occurred while resetting the password" });
+  } 
 };
 
-const updatePassword = (message) => {
-  const data = message.data.toString();
-  console.log('Received message:', data);
-  const { Id, Password } = JSON.parse(data);
+async function updatePassword(req, res) {
+  const { Id, Password } = req.body;
 
-  // Check if user exists
-  const userQuery = `SELECT * FROM UserData WHERE Id = '${Id}'`;
-  new sql.Request().query(userQuery, (err, result) => {
-    if (err) {
-      console.error("Error checking user existence:", err);
-      // Handle error, maybe return an error response
-    } else {
-      // If no rows are returned, the user does not exist
-      if (result.recordset.length === 0) {
-        console.log("User does not exist.");
-        // Handle the case where the user does not exist, maybe return an error response
-      } else {
-        console.log("User exists.");
+  try {
+    // Verificar si el usuario existe
+    const userRequest = new sql.Request();
+    userRequest.input('Id', sql.VarChar, Id);
+    const userResult = await userRequest.query('SELECT * FROM UserData WHERE Id = @Id');
 
-        // Update the user's password in the database with the temporary password
-        const updateQuery = `UPDATE UserData SET Password = '${Password}' WHERE Id = '${Id}'`;
-
-        // Execute the update query
-        new sql.Request().query(updateQuery, (err, result) => {
-          if (err) {
-            console.error("Error updating password:", err);
-            // Handle error, maybe return an error response
-          } else {
-            console.log("Password Update Succesfully.");
-            message.ack();
-            emailer.sendPasswordConfirmation(Id);
-          }
-        });
-      }
+    if (userResult.recordset.length === 0) {
+      const message = "User does not exist.";
+      console.log(message);
+      return res.status(statusCodes.OK).json({ error: message });
     }
-  });
+
+    console.log("User exists.");
+
+    // Hash de la nueva contraseña
+    const hashPassword = await bcrypt.hash(Password, 10);
+
+    // Actualizar la contraseña del usuario en la base de datos con la contraseña hash
+    const updateRequest = new sql.Request();
+    updateRequest.input('Password', sql.VarChar, hashPassword);
+    updateRequest.input('Id', sql.VarChar, Id);
+    await updateRequest.query('UPDATE UserData SET Password = @Password WHERE Id = @Id');
+
+    console.log("Password updated successfully.");
+
+    // Enviar confirmación de actualización de contraseña al correo electrónico del usuario
+    await emailer.sendPasswordConfirmation(Id);
+
+    return res.status(statusCodes.OK).json({ message: "Password updated successfully" });
+
+  } catch (err) {
+    console.error("Error executing query:", err);
+    return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ error: "An error occurred while updating the password" });
+  }
 };
+
 
 
 
