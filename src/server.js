@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const authController = require('./controllers/authController');
 const { PubSub } = require('@google-cloud/pubsub');
 const sql = require("mssql");
+const verifyToken = require('./helpers/verifyToken');
 const app = express();
 const router = express.Router(); 
 const port = 3001;
@@ -37,10 +38,10 @@ sql.connect(config, err => {
 
 router.post('/register', authController.registerFunction);
 router.post('/login', authController.loginFunction);
-router.get('/getUserbyId', authController.getUserById);
-router.delete('/deleteUser', authController.deleteUser);
-router.get('/resetPassword', authController.resetPassword);
-router.post('/updatePassword', authController.updatePassword);
+router.get('/getUserbyId', verifyToken, authController.getUserById);
+router.delete('/deleteUser', verifyToken, authController.deleteUser);
+router.get('/resetPassword', verifyToken, authController.resetPassword);
+router.post('/updatePassword', verifyToken, authController.updatePassword);
 
 app.use(router); 
 app.listen(port, () => {

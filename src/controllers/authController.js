@@ -2,6 +2,8 @@ const statusCodes = require("../constants/statusCodes");
 const emailer = require("../helpers/emailHelper");
 const bcrypt = require('bcrypt');
 const sql = require("mssql");
+const jwt = require('jsonwebtoken');
+
 
 
 // Register a new user
@@ -36,25 +38,24 @@ const registerFunction = (req, res) => {
   });
 };
 
+// Función de inicio de sesión
 const loginFunction = (req, res) => {
   const { Id, Password } = req.body;
-  // Execute the SQL query to retrieve user data
+
   new sql.Request().query(`SELECT * FROM UserData WHERE Id = '${Id}'`, (err, result) => {
     if (err) {
-      console.error("Error executing query:", err);
+      console.error("Error ejecutando la consulta:", err);
       return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
     }
 
-    // Check if user exists
     const user = result.recordset[0];
     if (!user) {
       return res.status(statusCodes.OK).json({ message: 'Invalid username or password' });
     }
 
-    // Compare passwords
     bcrypt.compare(Password, user.Password, (compareErr, passwordMatch) => {
       if (compareErr) {
-        console.error("Error comparing passwords:", compareErr);
+        console.error("Error comparando las contraseñas:", compareErr);
         return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
       }
 
@@ -62,8 +63,13 @@ const loginFunction = (req, res) => {
         return res.status(statusCodes.OK).json({ message: 'Invalid username or password' });
       }
 
-      // Passwords match, return user data
-      res.status(statusCodes.OK).json(user);
+      const token = jwt.sign(
+        { userId: user.Id, username: user.Username },
+        'pepe', // Clave secreta segura
+        { expiresIn: '1h' }
+      );
+
+      res.status(statusCodes.OK).json({ user, token });
     });
   });
 };
