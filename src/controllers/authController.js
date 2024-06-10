@@ -53,24 +53,14 @@ const loginFunction = (req, res) => {
       return res.status(statusCodes.OK).json({ message: 'Invalid username or password' });
     }
 
-    bcrypt.compare(Password, user.Password, (compareErr, passwordMatch) => {
-      if (compareErr) {
-        console.error("Error comparando las contraseñas:", compareErr);
-        return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
-      }
+    const token = jwt.sign(
+      { userId: user.Id, username: user.Username },
+      'pepe', // Clave secreta segura
+      { expiresIn: '1h' }
+    );
 
-      if (!passwordMatch) {
-        return res.status(statusCodes.OK).json({ message: 'Invalid username or password' });
-      }
-
-      const token = jwt.sign(
-        { userId: user.Id, username: user.Username },
-        'pepe', // Clave secreta segura
-        { expiresIn: '1h' }
-      );
-
-      res.status(statusCodes.OK).json({ user, token });
-    });
+    res.status(statusCodes.OK).json({ user, token });
+    
   });
 };
 
