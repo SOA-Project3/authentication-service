@@ -24,6 +24,7 @@
   "dependencies": {
     "@google-cloud/pubsub": "^4.4.0",
     "bcrypt": "^5.1.1",
+    "crypto": "^1.0.1",
     "express": "^4.19.2",
     "jest-mock-req-res": "^1.0.2",
     "jsonwebtoken": "^9.0.2",

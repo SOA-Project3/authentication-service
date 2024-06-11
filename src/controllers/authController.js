@@ -3,12 +3,14 @@ const emailer = require("../helpers/emailHelper");
 const bcrypt = require('bcrypt');
 const sql = require("mssql");
 const jwt = require('jsonwebtoken');
+const decrypt  = require("../helpers/passwordManager");
 
 
 
 // Register a new user
 const registerFunction = (req, res) => {
-  const { Id, Fullname, Rol, Password } = req.body;
+  const { Id, Fullname, Rol } = req.body;
+  const Password = req.headers['password'];
 
   // Check if the username is already taken
   new sql.Request().query(`SELECT * FROM UserData WHERE Id = '${Id}'`, async (err, result) => {
@@ -40,7 +42,9 @@ const registerFunction = (req, res) => {
 
 // Función de inicio de sesión
 const loginFunction = (req, res) => {
-  const { Id, Password } = req.body;
+  const { Id } = req.body;
+  const Password = req.headers['password'];
+
 
   new sql.Request().query(`SELECT * FROM UserData WHERE Id = '${Id}'`, (err, result) => {
     if (err) {
@@ -53,14 +57,23 @@ const loginFunction = (req, res) => {
       return res.status(statusCodes.OK).json({ message: 'Invalid username or password' });
     }
 
-    const token = jwt.sign(
-      { userId: user.Id, username: user.Username },
-      'pepe', // Clave secreta segura
-      { expiresIn: '1h' }
-    );
-
-    res.status(statusCodes.OK).json({ user, token });
+    try{
+      const commingPassword = decrypt.decryptPassword(Password);
+      const currentPassword = decrypt.decryptPassword(user.Password);
+      if (commingPassword == currentPassword){
+        const token = jwt.sign(
+          { userId: user.Id, username: user.Username },
+          'pepe', // Clave secreta segura
+          { expiresIn: '1h' }
+        );
     
+      res.status(statusCodes.OK).json({ user, token });
+      }else{
+        res.status(statusCodes.OK).json({ message: 'Invalid username or password' });
+        }
+    }catch{
+      res.status(statusCodes.OK).json({ message: 'Invalid username or password' });
+    }
   });
 };
 
