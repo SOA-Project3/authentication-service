@@ -46,7 +46,7 @@ const loginFunction = (req, res) => {
   const Password = req.headers['password'];
 
 
-  new sql.Request().query(`SELECT * FROM UserData WHERE Id = '${Id}'`, (err, result) => {
+  new sql.Request().query(`SELECT ud.Id AS UserId, ud.Fullname, ud.Rol, ud.Password, COALESCE(b.Id, NULL) AS BranchId FROM UserData ud LEFT JOIN  Branch b ON ud.Id = b.Admin WHERE  ud.Id = '${Id}'`, (err, result) => {
     if (err) {
       console.error("Error ejecutando la consulta:", err);
       return res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
