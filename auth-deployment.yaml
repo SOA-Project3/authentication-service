@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth 
+  template:
+    metadata:
+      labels:
+        app: auth 
+    spec:
+      containers:
+        - name: auth 
+          image: auth:v0.2
+          ports:
+            - containerPort: 3001
+          env:
+            - name: SECRET_KEY
+              value: '04404cfec89f9cd9b3a165146111bd20f24cbb5f4e6159b6166dac9c59ac3579'
+            - name: TOKEN_KEY
+              value: 'b5395b0d94a52c08f7e10e9c517e51b6'
