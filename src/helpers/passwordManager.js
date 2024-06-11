@@ -8,7 +8,16 @@ function decryptPassword(encryptedPassword) {
   let decrypted = decipher.update(encryptedPassword, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
   return decrypted;
-}
+};
+
+function encryptPassword(password) {
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+    let encrypted = cipher.update(password, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return encrypted;
+  }
+  
 module.exports = {
+    encryptPassword,
     decryptPassword
 }

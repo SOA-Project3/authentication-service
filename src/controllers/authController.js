@@ -160,12 +160,11 @@ async function resetPassword(req, res) {
     // Generar una contraseña temporal aleatoria
     const tempPassword = Math.random().toString(36).slice(-8);
 
-    // Hash de la contraseña temporal
-    const hashPassword = await bcrypt.hash(tempPassword, 10);
+    const encrypted = decrypt.encryptPassword(tempPassword);
 
     // Actualizar la contraseña del usuario en la base de datos con la contraseña temporal hash
     const updateRequest = new sql.Request();
-    updateRequest.input('Password', sql.VarChar, hashPassword);
+    updateRequest.input('Password', sql.VarChar, encrypted);
     updateRequest.input('Id', sql.VarChar, Id);
     await updateRequest.query('UPDATE UserData SET Password = @Password WHERE Id = @Id');
 
@@ -183,7 +182,9 @@ async function resetPassword(req, res) {
 };
 
 async function updatePassword(req, res) {
-  const { Id, Password } = req.body;
+  const { Id } = req.body;
+  const Password = req.headers['password'];
+
 
   try {
     // Verificar si el usuario existe
@@ -199,12 +200,9 @@ async function updatePassword(req, res) {
 
     console.log("User exists.");
 
-    // Hash de la nueva contraseña
-    const hashPassword = await bcrypt.hash(Password, 10);
-
     // Actualizar la contraseña del usuario en la base de datos con la contraseña hash
     const updateRequest = new sql.Request();
-    updateRequest.input('Password', sql.VarChar, hashPassword);
+    updateRequest.input('Password', sql.VarChar, Password);
     updateRequest.input('Id', sql.VarChar, Id);
     await updateRequest.query('UPDATE UserData SET Password = @Password WHERE Id = @Id');
 
