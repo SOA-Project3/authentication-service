@@ -210,8 +210,7 @@ async function resetPassword(req, res) {
     // Generar una contraseña temporal aleatoria
     const tempPassword = Math.random().toString(36).slice(-8);
 
-    // Hash de la contraseña temporal
-    const hashPassword = await bcrypt.hash(tempPassword, 10);
+    const encrypted = decrypt.encryptPassword(tempPassword);
 
     // Actualizar la contraseña del usuario en la base de datos con la contraseña temporal hash
     const updateRequest = new sql.Request();
@@ -255,9 +254,6 @@ async function updatePassword(req, res) {
     }
 
     console.log("User exists.");
-
-    // Hash de la nueva contraseña
-    const hashPassword = await bcrypt.hash(Password, 10);
 
     // Actualizar la contraseña del usuario en la base de datos con la contraseña hash
     const updateRequest = new sql.Request();
